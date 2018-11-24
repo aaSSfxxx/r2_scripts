@@ -583,7 +583,7 @@ def ParseControlInfo(object_name, obj_addr):
                     real_func = jump["jump"]
                     control_type = GetEventByID(control_type, control_id)
                     if control_type == "Unknown" : control_type = "%x" % real_func
-                    event_name = "fn_%s_%s_%s" % (object_name, control_name, control_type)
+                    event_name = "fn.%s_%s_%s" % (object_name, control_name, control_type)
                     CreateFunction(real_func, event_name)
 
 
@@ -612,19 +612,19 @@ def ParsePrivateObjectInfo(object_name, obj_addr):
         if jump["type"] == "jmp":
             event = jump["jump"]
             if is_user_defined == True:
-                event_name = "fn_Unknown_%08X" % event
+                event_name = "fn.Unknown_%08X" % event
                 CreateFunction(event, event_name)
 
 def ParseObjectDescriptor(obj_addr):
     VBPublicObjectDescriptor = ParseStructure(obj_addr,
                                               CVBPublicObjectDescriptors)
     object_name = GetString(VBPublicObjectDescriptor.lpszObjectName)
-    CreateFlag(obj_addr, "VB_" + object_name + "_Descriptor")
+    CreateFlag(obj_addr, "VB." + object_name + "_Descriptor")
 
     # Parse ObjectInfo
     VBObjectInfo = ParseStructure(VBPublicObjectDescriptor.lpObjectInfo, CVBObjectInfo)
     object_name = GetString(VBPublicObjectDescriptor.lpszObjectName)
-    CreateFlag(VBPublicObjectDescriptor.lpObjectInfo, object_name + "_ObjectInfo")
+    CreateFlag(VBPublicObjectDescriptor.lpObjectInfo, object_name + ".ObjectInfo")
 
     addr_vb_optional_object_info = VBPublicObjectDescriptor.lpObjectInfo + sizeof(CVBObjectInfo)
     if VBObjectInfo.lpConstants != addr_vb_optional_object_info:
