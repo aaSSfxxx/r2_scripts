@@ -1,6 +1,10 @@
 #!/usr/bin/env python
+# Port of "VB Exe Parser" script to radare2 by aaSSfxxx
+# Original credits to Vic P. aka vic4key (vic4key[at]gmail.com)
+# Original script: https://github.com/Kinimiwar/VB-Exe-Parser/
+
 import r2pipe
-import ctypes, inspect
+import ctypes
 
 class CVBHeader(ctypes.Structure):
     _fields_ = [
