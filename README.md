@@ -5,5 +5,5 @@ r2pipe bindings seem broken now.
 
 ## vb_analysis.py
 
-Usage: invoke it with `#!pipe python2 vb\_analysis.py` inside a r2 (or cutter)
+Usage: invoke it with `#!pipe python2 vb_analysis.py` inside a r2 (or cutter)
 session.
