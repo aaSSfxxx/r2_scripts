@@ -5,6 +5,7 @@
 
 import r2pipe
 import ctypes
+import sys
 
 class CVBHeader(ctypes.Structure):
     _fields_ = [
@@ -507,7 +508,10 @@ def IsAddressValid(addr):
 
 def Dword(addr):
     bts = r2.cmdj("pxj 4 @0x%x" % addr)
-    bts = "".join([chr(i) for i in bts])
+    if sys.version_info[0] == 2:
+        bts = "".join([chr(i) for i in bts])
+    else:
+        bts = bytes(bts)
     return ctypes.c_uint.from_buffer_copy(bts).value
 
 
@@ -516,7 +520,10 @@ def ParseStructure(a, t):
     p = r2.cmdj("pxj %d @ 0x%x" % (ctypes.sizeof(t), a))
     if p is None:
         return None
-    p = "".join([chr(i) for i in p])
+    if sys.version_info[0] == 2:
+        p = b"".join([chr(i) for i in p])
+    else:
+        p = bytes(p)
     return t.from_buffer_copy(p)
 
 
@@ -559,7 +566,7 @@ def GetEventByID(ctrl_type, event_id):
 
 
 def GetString(addr):
-    return r2.cmd("psz @0x%x" % addr)
+    return r2.cmd("psz @0x%x" % addr).strip()
 
 
 def ParseControlInfo(object_name, obj_addr):
@@ -569,33 +576,37 @@ def ParseControlInfo(object_name, obj_addr):
     control_type = VBGUID.Data1
     VBEventHandlerTable = ParseStructure(VBControlInfo.lpEventTable, CVBEventHandlerTable)
     entry_point = VBControlInfo.lpEventTable + sizeof(CVBEventHandlerTable) - 4
-    for control_id in xrange(0, VBControlInfo.fControlType):
+    for control_id in range(0, VBControlInfo.fControlType):
         p = entry_point + 4*control_id
         if IsAddressValid(p):
             addr_event = Dword(p)
             if IsAddressValid(addr_event):
-                print "Trampoline at %x" % addr_event
-                print "Event: %s" % (control_name + "_" + GetEventByID(control_type, control_id))
+                print("Trampoline at %x" % addr_event)
+                print("Event: %s" %
+                      (control_name + "_" +
+                       GetEventByID(control_type, control_id)))
                 # Parse trampoline and flag the correct function
                 obj = r2.cmdj("pdj 2 @0x%x" % addr_event)
                 jump = obj[1]
                 if obj[0]["type"] == "sub" and jump["type"] == "jmp":
                     real_func = jump["jump"]
                     control_type = GetEventByID(control_type, control_id)
-                    if control_type == "Unknown" : control_type = "%x" % real_func
-                    event_name = "fn.%s_%s_%s" % (object_name, control_name, control_type)
+                    if control_type == "Unknown" :
+                        control_type = "%x" % real_func
+                    event_name = "fn.%s_%s_%s" % (object_name, control_name,
+                                                  control_type)
                     CreateFunction(real_func, event_name)
 
 
 def ParsePrivateObjectInfo(object_name, obj_addr):
     VBOptionalObjectInfo = ParseStructure(obj_addr, CVBOptionalObjectInfo)
-    for j in xrange(0, VBOptionalObjectInfo.dwControlCount):
+    for j in range(0, VBOptionalObjectInfo.dwControlCount):
         ### CONTROL INFO ###
         addr_vb_control_info = VBOptionalObjectInfo.lpControls + j*sizeof(CVBControlInfo)
         if IsAddressValid(addr_vb_control_info ):
             ParseControlInfo(object_name, addr_vb_control_info)
 
-    for j in xrange(0, VBOptionalObjectInfo.wEventCount):
+    for j in range(0, VBOptionalObjectInfo.wEventCount):
         addr_vb_event = VBOptionalObjectInfo.lpEvents + j*4
         if not IsAddressValid(addr_vb_event): return STATUS()
         event_eat = Dword(addr_vb_event) # eat: event address table
@@ -640,7 +651,7 @@ VBProjectInfo = ParseStructure(VBHeader.lpProjectData, CVBProjectInfo)
 VBObjectTable = ParseStructure(VBProjectInfo.lpObjectTable, CVBObjectTable)
 
 # PUBLIC OBJECT DESCRIPTORS #
-for i in xrange(0, VBObjectTable.dwTotalObjects):
+for i in range(0, VBObjectTable.dwTotalObjects):
     addr_vb_public_object_descriptors = (VBObjectTable.lpObjectArray +
                                          i*sizeof(CVBPublicObjectDescriptors))
     ParseObjectDescriptor(addr_vb_public_object_descriptors)
